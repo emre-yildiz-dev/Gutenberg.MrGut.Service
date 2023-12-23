@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Abp.Application.Services.Dto;
 using GutenBerg.MrGut.Managers;
 using GutenBerg.MrGut.Managers.Books;
 using GutenBerg.MrGut.Managers.Books.dto;
@@ -15,10 +16,11 @@ public class BookAppService: MrGutAppServiceBase
         _bookManager = bookManager;
     }
 
-    public async Task<List<BookDto>> GetBooks()
+    public async Task<PagedResultDto<BookDto>> GetBooks(int pageNumber, int pageSize, string searchTerm)
     {
-        return await _bookManager.GetBooksAsync();
+        return await _bookManager.GetBooksAsync(pageNumber, pageSize, searchTerm);
     }
+
 
     public async Task<BookDto> GetBookById(int id)
     {
