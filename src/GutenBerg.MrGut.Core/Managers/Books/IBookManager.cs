@@ -8,4 +8,5 @@ namespace GutenBerg.MrGut.Managers.Books;
 public interface IBookManager: IDomainService
 {
     Task<List<BookDto>> GetBooksAsync();
+    Task<BookDto> GetBookByIdAsync(int id);
 }

@@ -20,4 +20,9 @@ public class BookAppService: MrGutAppServiceBase
         return await _bookManager.GetBooksAsync();
     }
 
+    public async Task<BookDto> GetBookById(int id)
+    {
+        return await _bookManager.GetBookByIdAsync(id);
+    }
+
 }
