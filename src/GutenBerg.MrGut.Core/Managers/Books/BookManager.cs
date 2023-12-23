@@ -27,6 +27,7 @@ public class BookManager: BaseManager, IBookManager
         // Convert the response to a list of BookDto objects
         return result.Results.Select(book => new BookDto
         {
+            Id = book.Id,
             Title = book.Title,
             Author = string.Join(", ", book.Authors.Select(a => a.Name)),
             ImageUrl = book.Formats["image/jpeg"] // or the correct key for the image
