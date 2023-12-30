@@ -9,4 +9,5 @@ public class UserBookMapping: FullAuditedEntity
     public User User { get; set; }
     public int BookId { get; set; }
     public Book Book { get; set; }
+    public int MemoizedPageNumber { get; set; } = 1;
 }

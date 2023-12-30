@@ -20,6 +20,10 @@ public class BookAppService: MrGutAppServiceBase
     {
         return await _bookManager.GetBooksAsync(pageNumber, pageSize, searchTerm);
     }
+    public async Task<PagedResultDto<BookDto>> GetUserBooks(int pageNumber, int pageSize, string searchTerm)
+    {
+        return await _bookManager.GetUserBooksAsync(pageNumber, pageSize, searchTerm, AbpSession.UserId);
+    }
 
 
     public async Task<BookDto> GetBookById(int id)

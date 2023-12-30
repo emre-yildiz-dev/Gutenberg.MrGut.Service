@@ -10,4 +10,5 @@ public class BookDto
     public string ImageUrl { get; set; }
     [CanBeNull] public string ContentUrl { get; set; }
     public string Languages { get; set; }
+    public string Content { get; set; }
 }

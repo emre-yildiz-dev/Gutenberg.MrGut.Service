@@ -11,4 +11,5 @@ public interface IBookManager: IDomainService
 {
 Task<PagedResultDto<BookDto>> GetBooksAsync(int pageNumber = 1, int pageSize = 10, string searchTerm = "");
     Task<BookDto> GetBookByIdAsync(int id);
+    Task<PagedResultDto<BookDto>> GetUserBooksAsync(int pageNumber, int pageSize, string searchTerm, long? abpSessionUserId);
 }

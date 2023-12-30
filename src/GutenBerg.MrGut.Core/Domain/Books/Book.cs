@@ -17,4 +17,5 @@ public class Book: FullAuditedEntity
 
     public Author Author { get; set; }
     public Collection<Page> Page { get; set; }
+    public string ImageUrl { get; set; }
 }

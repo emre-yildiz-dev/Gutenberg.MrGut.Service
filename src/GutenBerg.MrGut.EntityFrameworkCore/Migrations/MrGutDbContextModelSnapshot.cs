@@ -1633,6 +1633,9 @@ namespace GutenBerg.MrGut.Migrations
                     b.Property<int>("GutenbergId")
                         .HasColumnType("int");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -1688,6 +1691,9 @@ namespace GutenBerg.MrGut.Migrations
 
                     b.Property<long?>("LastModifierUserId")
                         .HasColumnType("bigint");
+
+                    b.Property<int>("MemoizedPageNumber")
+                        .HasColumnType("int");
 
                     b.Property<long?>("UserId")
                         .HasColumnType("bigint");
