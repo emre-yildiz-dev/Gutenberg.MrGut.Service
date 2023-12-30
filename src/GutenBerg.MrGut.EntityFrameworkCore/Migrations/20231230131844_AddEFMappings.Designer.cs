@@ -4,6 +4,7 @@ using GutenBerg.MrGut.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GutenBerg.MrGut.Migrations
 {
     [DbContext(typeof(MrGutDbContext))]
-    partial class MrGutDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231230131844_AddEFMappings")]
+    partial class AddEFMappings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1630,9 +1633,6 @@ namespace GutenBerg.MrGut.Migrations
                     b.Property<DateTime?>("DeletionTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("GutenbergId")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
@@ -1716,17 +1716,11 @@ namespace GutenBerg.MrGut.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("GutenbergId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PageNumber")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("BookId");
 
-                    b.ToTable("Page", (string)null);
+                    b.ToTable("Pages", (string)null);
                 });
 
             modelBuilder.Entity("GutenBerg.MrGut.MultiTenancy.Tenant", b =>

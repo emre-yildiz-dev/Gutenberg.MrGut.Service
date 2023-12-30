@@ -4,6 +4,7 @@ using GutenBerg.MrGut.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GutenBerg.MrGut.Migrations
 {
     [DbContext(typeof(MrGutDbContext))]
-    partial class MrGutDbContextModelSnapshot : ModelSnapshot
+    [Migration("20231230143042_AddGutenbergIdToPage")]
+    partial class AddGutenbergIdToPage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1717,9 +1720,6 @@ namespace GutenBerg.MrGut.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("GutenbergId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PageNumber")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
