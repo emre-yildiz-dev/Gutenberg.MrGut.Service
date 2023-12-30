@@ -1,22 +1,20 @@
+using System.Collections.ObjectModel;
 using Abp.Domain.Entities.Auditing;
 using GutenBerg.MrGut.Domain.Authors;
-using GutenBerg.MrGut.Domain.Genres;
+using GutenBerg.MrGut.Domain.Pages;
 
 namespace GutenBerg.MrGut.Domain.Books;
 
 public class Book: FullAuditedEntity
 {
-    public int BookId { get; set; }
+    public int Id { get; set; }
     public string Title { get; set; }
-    public int? PublicationYear { get; set; }
-    public string Language { get; set; }
+    public string Languages { get; set; }
     public string Content { get; set; }
+    public string ContentUrl { get; set; }
 
-    // Foreign keys
     public int AuthorId { get; set; }
-    public int GenreId { get; set; }
 
-    // Navigation properties
     public Author Author { get; set; }
-    public Genre Genre { get; set; }
+    public Collection<Page> Page { get; set; }
 }

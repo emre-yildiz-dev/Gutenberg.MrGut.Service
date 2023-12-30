@@ -1,12 +1,14 @@
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Abp.Application.Services.Dto;
+using GutenBerg.MrGut.Domain.Authors;
 using GutenBerg.MrGut.Domain.Books;
 using GutenBerg.MrGut.Managers.Books.dto;
-using JetBrains.Annotations;
+using GutenBerg.MrGut.Stores.Authors;
+using GutenBerg.MrGut.Stores.Books;
+using GutenBerg.MrGut.Stores.UserBookMappings;
 using Newtonsoft.Json;
 
 namespace GutenBerg.MrGut.Managers.Books;
@@ -14,10 +16,16 @@ namespace GutenBerg.MrGut.Managers.Books;
 public class BookManager: BaseManager, IBookManager
 {
     private readonly HttpClient _httpClient;
+    private readonly IBookStore _bookStore;
+    private readonly IAuthorStore _authorStore;
+    private readonly IUserBookMappingStore _userBookMappingStore;
 
-    public BookManager(HttpClient httpClient)
+    public BookManager(HttpClient httpClient, IBookStore bookStore, IAuthorStore authorStore, IUserBookMappingStore userBookMappingStore)
     {
         _httpClient = httpClient;
+        _bookStore = bookStore;
+        _authorStore = authorStore;
+        _userBookMappingStore = userBookMappingStore;
     }
 
     public async Task<PagedResultDto<BookDto>> GetBooksAsync(int pageNumber = 1, int pageSize = 10, string searchTerm = "")
@@ -56,7 +64,7 @@ public class BookManager: BaseManager, IBookManager
         var content = await response.Content.ReadAsStringAsync();
         var book = JsonConvert.DeserializeObject<BookResult>(content);
         
-        return  new BookDto
+        var bookDto =  new BookDto
         {
             Id = book.Id,
             Title = book.Title,
@@ -65,5 +73,30 @@ public class BookManager: BaseManager, IBookManager
             ImageUrl = book.Formats["image/jpeg"],
             ContentUrl = book.Formats["text/html"]
         };
+        
+        var author = new Author
+        {
+            Name = bookDto.Author,
+            BirthYear = book.Authors.Select(a => a.BirthYear).FirstOrDefault(),
+            DeathYear = book.Authors.Select(a => a.DeathYear).FirstOrDefault(),
+        };
+        var authorSaveResult = await _authorStore.CreateAsync(author);
+        var bookToSave = new Book
+        {
+            Id = bookDto.Id,
+            Title = bookDto.Title,
+            ContentUrl = bookDto.ContentUrl,
+            Languages = bookDto.Languages,
+            AuthorId = authorSaveResult.Id
+        };
+        var bookSaveResult = await _bookStore.CreateAsync(bookToSave);
+        var userBookMapping = new UserBookMapping
+        {
+            BookId = bookSaveResult.Id,
+            UserId = AbpSession.UserId
+        };
+        var userBookMappingSaveResult = await _userBookMappingStore.CreateAsync(userBookMapping);
+        
+        return bookDto;
     }
 }
