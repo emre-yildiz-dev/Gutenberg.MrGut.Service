@@ -26,5 +26,4 @@ public class BookAppService: MrGutAppServiceBase
     {
         return await _bookManager.GetBookByIdAsync(id);
     }
-
 }

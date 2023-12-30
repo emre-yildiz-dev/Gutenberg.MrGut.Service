@@ -13,4 +13,9 @@ public class AuthorStore : BaseStore<Author>, IAuthorStore
     {
         return base.GetList(filter, noTracking);
     }
+
+    public bool AuthorExists(string name)
+    {
+        return base.GetList(author => author.Name == name).Any();
+    }
 }

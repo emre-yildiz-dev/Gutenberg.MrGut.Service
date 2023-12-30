@@ -7,7 +7,7 @@ namespace GutenBerg.MrGut.Domain.Books;
 
 public class Book: FullAuditedEntity
 {
-    public int Id { get; set; }
+    public int GutenbergId { get; set; }
     public string Title { get; set; }
     public string Languages { get; set; }
     public string Content { get; set; }

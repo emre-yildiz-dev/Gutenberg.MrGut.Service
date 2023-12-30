@@ -10,4 +10,5 @@ using System.Linq.Expressions;
 public interface IBookStore : IBaseStore<Book>
 {
     IQueryable<Book> GetAllList(Expression<Func<Book, bool>> filter = null, bool noTracking = true);
+    bool BookExists(int gutenbergId);
 }

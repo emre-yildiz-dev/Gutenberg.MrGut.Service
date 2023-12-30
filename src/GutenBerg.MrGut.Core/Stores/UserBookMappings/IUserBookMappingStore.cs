@@ -8,4 +8,5 @@ namespace GutenBerg.MrGut.Stores.UserBookMappings;
 public interface IUserBookMappingStore : IBaseStore<UserBookMapping>
 {
     IQueryable<UserBookMapping> GetAllList(Expression<Func<UserBookMapping, bool>> filter = null, bool noTracking = true);
+    bool UserBookMappingExists(int bookId, long? userId);
 }
