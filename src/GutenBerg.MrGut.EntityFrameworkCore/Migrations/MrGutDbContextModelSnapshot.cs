@@ -1594,9 +1594,6 @@ namespace GutenBerg.MrGut.Migrations
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Nationality")
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.ToTable("Authors");
@@ -1613,10 +1610,10 @@ namespace GutenBerg.MrGut.Migrations
                     b.Property<int>("AuthorId")
                         .HasColumnType("int");
 
-                    b.Property<int>("BookId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Content")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContentUrl")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreationTime")
@@ -1631,13 +1628,10 @@ namespace GutenBerg.MrGut.Migrations
                     b.Property<DateTime?>("DeletionTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("GenreId")
-                        .HasColumnType("int");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Language")
+                    b.Property<string>("Languages")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("LastModificationTime")
@@ -1646,9 +1640,6 @@ namespace GutenBerg.MrGut.Migrations
                     b.Property<long?>("LastModifierUserId")
                         .HasColumnType("bigint");
 
-                    b.Property<int?>("PublicationYear")
-                        .HasColumnType("int");
-
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");
 
@@ -1656,12 +1647,10 @@ namespace GutenBerg.MrGut.Migrations
 
                     b.HasIndex("AuthorId");
 
-                    b.HasIndex("GenreId");
-
                     b.ToTable("Books");
                 });
 
-            modelBuilder.Entity("GutenBerg.MrGut.Domain.Genres.Genre", b =>
+            modelBuilder.Entity("GutenBerg.MrGut.Domain.Books.UserBookMapping", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -1669,18 +1658,61 @@ namespace GutenBerg.MrGut.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("GenreId")
+                    b.Property<int>("BookId")
                         .HasColumnType("int");
 
-                    b.Property<string>("Name")
+                    b.Property<DateTime>("CreationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("CreatorUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("DeleterUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletionTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastModificationTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("LastModifierUserId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("UserId")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserBookMappings");
+                });
+
+            modelBuilder.Entity("GutenBerg.MrGut.Domain.Pages.Page", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Content")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Genres");
+                    b.HasIndex("BookId");
+
+                    b.ToTable("Pages");
                 });
 
             modelBuilder.Entity("GutenBerg.MrGut.MultiTenancy.Tenant", b =>
@@ -1973,15 +2005,35 @@ namespace GutenBerg.MrGut.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("GutenBerg.MrGut.Domain.Genres.Genre", "Genre")
-                        .WithMany("Books")
-                        .HasForeignKey("GenreId")
+                    b.Navigation("Author");
+                });
+
+            modelBuilder.Entity("GutenBerg.MrGut.Domain.Books.UserBookMapping", b =>
+                {
+                    b.HasOne("GutenBerg.MrGut.Domain.Books.Book", "Book")
+                        .WithMany()
+                        .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Author");
+                    b.HasOne("GutenBerg.MrGut.Authorization.Users.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
 
-                    b.Navigation("Genre");
+                    b.Navigation("Book");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("GutenBerg.MrGut.Domain.Pages.Page", b =>
+                {
+                    b.HasOne("GutenBerg.MrGut.Domain.Books.Book", "Book")
+                        .WithMany("Page")
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
                 });
 
             modelBuilder.Entity("GutenBerg.MrGut.MultiTenancy.Tenant", b =>
@@ -2087,9 +2139,9 @@ namespace GutenBerg.MrGut.Migrations
                     b.Navigation("Books");
                 });
 
-            modelBuilder.Entity("GutenBerg.MrGut.Domain.Genres.Genre", b =>
+            modelBuilder.Entity("GutenBerg.MrGut.Domain.Books.Book", b =>
                 {
-                    b.Navigation("Books");
+                    b.Navigation("Page");
                 });
 #pragma warning restore 612, 618
         }

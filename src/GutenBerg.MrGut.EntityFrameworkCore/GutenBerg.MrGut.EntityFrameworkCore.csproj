@@ -26,4 +26,7 @@
   <ItemGroup>
     <ProjectReference Include="..\GutenBerg.MrGut.Core\GutenBerg.MrGut.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+  </ItemGroup>
 </Project>

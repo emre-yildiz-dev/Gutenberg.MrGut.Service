@@ -4,7 +4,7 @@ using GutenBerg.MrGut.Domain.Books;
 
 namespace GutenBerg.MrGut.Domain.Genres;
 
-public class Genre: Entity
+public class Page: Entity
 {
     public int GenreId { get; set; }
     public string Name { get; set; }

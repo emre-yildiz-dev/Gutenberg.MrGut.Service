@@ -4,7 +4,7 @@ using GutenBerg.MrGut.Authorization.Roles;
 using GutenBerg.MrGut.Authorization.Users;
 using GutenBerg.MrGut.Domain.Authors;
 using GutenBerg.MrGut.Domain.Books;
-using GutenBerg.MrGut.Domain.Genres;
+using GutenBerg.MrGut.Domain.Pages;
 using GutenBerg.MrGut.MultiTenancy;
 
 namespace GutenBerg.MrGut.EntityFrameworkCore
@@ -13,7 +13,8 @@ namespace GutenBerg.MrGut.EntityFrameworkCore
     {
         public DbSet<Author> Authors { get; set; }
         public DbSet<Book> Books { get; set; }
-        public DbSet<Genre> Genres { get; set; }
+        public DbSet<Page> Pages { get; set; }
+        public DbSet<UserBookMapping> UserBookMappings { get; set; }
 
 
         
