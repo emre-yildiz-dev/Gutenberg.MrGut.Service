@@ -72,85 +72,100 @@ public class BookManager : BaseManager, IBookManager
 
     public async Task<BookDto> GetBookByIdAsync(int id)
     {
-        var response = await _httpClient.GetAsync("http://gutendex.com/books/" + id);
-        response.EnsureSuccessStatusCode();
+        var bookFromDb = _bookStore.GetList(book => book.GutenbergId == id).FirstOrDefault();
+        var book = new BookResult();
+        var bookDto = new BookDto();
 
-        var content = await response.Content.ReadAsStringAsync();
-        var book = JsonConvert.DeserializeObject<BookResult>(content);
-
-        
-        
-        var bookDto = new BookDto
+        if (bookFromDb is null)
         {
-            GutenbergId = book.Id,
-            Title = book.Title,
-            Author = string.Join(", ", book.Authors.Select(a => a.Name)),
-            Languages = string.Join(", ", book.Languages.Select(s => s)),
-            ImageUrl = book.Formats.ContainsKey("image/jpeg") 
-                ? book.Formats["image/jpeg"] 
-                :"https://cdn.pixabay.com/photo/2018/01/17/18/43/book-3088775_1280.jpg",
-            ContentUrl = book.Formats.ContainsKey("text/plain; charset=us-ascii")  
-                ? book.Formats["text/plain; charset=us-ascii"]
-                : "No content !"
-        };
-      
+            var response = await _httpClient.GetAsync("http://gutendex.com/books/" + id);
+            response.EnsureSuccessStatusCode();
 
-        var author = new Author
-        {
-            Name = bookDto.Author,
-            BirthYear = book.Authors.Select(a => a.BirthYear).FirstOrDefault(),
-            DeathYear = book.Authors.Select(a => a.DeathYear).FirstOrDefault(),
-        };
+            var content = await response.Content.ReadAsStringAsync();
+            book = JsonConvert.DeserializeObject<BookResult>(content);
 
-        var authorExists = _authorStore.AuthorExists(author.Name);
-        if (authorExists) return bookDto;
-        var authorSaveResult = await _authorStore.CreateAsync(author);
-        await _unitOfWorkManager.Current.SaveChangesAsync();
+            bookDto = new BookDto
+            {
+                GutenbergId = book.Id,
+                Title = book.Title,
+                Author = string.Join(", ", book.Authors.Select(a => a.Name)),
+                Languages = string.Join(", ", book.Languages.Select(s => s)),
+                ImageUrl = book.Formats.ContainsKey("image/jpeg")
+                   ? book.Formats["image/jpeg"]
+                   : "https://cdn.pixabay.com/photo/2018/01/17/18/43/book-3088775_1280.jpg",
+                ContentUrl = book.Formats.ContainsKey("text/plain; charset=us-ascii")
+                   ? book.Formats["text/plain; charset=us-ascii"]
+                   : "No content !"
+            };
 
-        var bookToSave = new Book
-        {
-            GutenbergId = bookDto.GutenbergId,
-            Title = bookDto.Title,
-            ContentUrl = bookDto.ContentUrl,
-            ImageUrl = bookDto.ImageUrl,
-            Languages = bookDto.Languages,
-            AuthorId = authorSaveResult.Id
-        };
-        var bookExists = _bookStore.BookExists(bookDto.GutenbergId);
-        if (bookExists) return bookDto;
-        var bookSaveResult = await _bookStore.CreateAsync(bookToSave);
-        await _unitOfWorkManager.Current.SaveChangesAsync();
-        var textContent = await GetBookHtmlContent(bookDto.ContentUrl);
-        
-       const int paragraphsPerPage = 18;
-       
-        var pages = ConvertToHtmlPages(textContent, paragraphsPerPage);
-        for (int i = 0; i < pages.Count; i++)
-        {
-            var pageToSave = new Page
+
+            var author = new Author
+            {
+                Name = bookDto.Author,
+                BirthYear = book.Authors.Select(a => a.BirthYear).FirstOrDefault(),
+                DeathYear = book.Authors.Select(a => a.DeathYear).FirstOrDefault(),
+            };
+
+            var authorExists = _authorStore.AuthorExists(author.Name);
+            if (authorExists) return bookDto;
+            var authorSaveResult = await _authorStore.CreateAsync(author);
+            await _unitOfWorkManager.Current.SaveChangesAsync();
+
+            var bookToSave = new Book
+            {
+                GutenbergId = bookDto.GutenbergId,
+                Title = bookDto.Title,
+                ContentUrl = bookDto.ContentUrl,
+                ImageUrl = bookDto.ImageUrl,
+                Languages = bookDto.Languages,
+                AuthorId = authorSaveResult.Id
+            };
+            var bookExists = _bookStore.BookExists(bookDto.GutenbergId);
+            if (bookExists) return bookDto;
+            var bookSaveResult = await _bookStore.CreateAsync(bookToSave);
+            await _unitOfWorkManager.Current.SaveChangesAsync();
+            var textContent = await GetBookHtmlContent(bookDto.ContentUrl);
+
+            const int paragraphsPerPage = 18;
+
+            var pages = ConvertToHtmlPages(textContent, paragraphsPerPage);
+            for (int i = 0; i < pages.Count; i++)
+            {
+                var pageToSave = new Page
+                {
+                    BookId = bookSaveResult.Id,
+                    GutenbergId = bookToSave.GutenbergId,
+                    Content = pages[i],
+                    PageNumber = i + 1
+                };
+                await _pageStore.CreateAsync(pageToSave);
+            }
+
+
+            var userBookMapping = new UserBookMapping
             {
                 BookId = bookSaveResult.Id,
-                GutenbergId = bookToSave.GutenbergId,
-                Content = pages[i],
-                PageNumber = i+1
+                UserId = AbpSession.UserId
             };
-            await _pageStore.CreateAsync(pageToSave); 
-        } 
-      
-
-        var userBookMapping = new UserBookMapping
-        {
-            BookId = bookSaveResult.Id,
-            UserId = AbpSession.UserId
-        };
-        var existedBook = _bookStore.GetList(book1 => book1.GutenbergId == bookToSave.GutenbergId)
-            .FirstOrDefault();
-        var userBookMappingExists =
-            existedBook != null &&
-            _userBookMappingStore.UserBookMappingExists(existedBook.Id, userBookMapping.UserId);
-        if (userBookMappingExists)
-            return bookDto;
-        await _userBookMappingStore.CreateAsync(userBookMapping);
+            var existedBook = _bookStore.GetList(book1 => book1.GutenbergId == bookToSave.GutenbergId)
+                .FirstOrDefault();
+            var userBookMappingExists =
+                existedBook != null &&
+                _userBookMappingStore.UserBookMappingExists(existedBook.Id, userBookMapping.UserId);
+            if (userBookMappingExists)
+                return bookDto;
+            await _userBookMappingStore.CreateAsync(userBookMapping);
+        }else{
+            var author = _authorStore.GetList(author => author.Id == bookFromDb.AuthorId).FirstOrDefault();
+            bookDto.Author = author.Name;
+            bookDto.Content = bookFromDb.Content;
+            bookDto.ContentUrl = bookFromDb.ContentUrl;
+            bookDto.GutenbergId = bookFromDb.GutenbergId;
+            bookDto.Id = bookFromDb.Id;
+            bookDto.ImageUrl = bookFromDb.ImageUrl;
+            bookDto.Languages = bookFromDb.Languages;
+            bookDto.Title = bookFromDb.Title;
+        }
 
         return bookDto;
     }
@@ -203,7 +218,7 @@ public class BookManager : BaseManager, IBookManager
             Content = page.Content,
             PageNumber = page.PageNumber
         }).ToList();
-        
+
         // Return the paginated result
         return Task.FromResult(new PagedResultDto<BookPageDto>(totalCount, bookPageDtos));
     }
@@ -211,7 +226,7 @@ public class BookManager : BaseManager, IBookManager
     public Task<MemoizedPageDto> GetUserBookMapping(long? abpSessionUserId, int pageDtoGutenbergId)
     {
         var book = _bookStore.GetList(book => book.GutenbergId == pageDtoGutenbergId).FirstOrDefault();
-        var    mapping = _userBookMappingStore.GetList(mapping => mapping.BookId == book.Id).FirstOrDefault();
+        var mapping = _userBookMappingStore.GetList(mapping => mapping.BookId == book.Id).FirstOrDefault();
         var memoizedPageDto = new MemoizedPageDto
         {
             GutenbergId = book.GutenbergId,
@@ -223,7 +238,7 @@ public class BookManager : BaseManager, IBookManager
     public Task<UserBookMapping> PostUserBookMapping(long? abpSessionUserId, MemoizedPageDto pageDto)
     {
         var book = _bookStore.GetList(book => book.GutenbergId == pageDto.GutenbergId).FirstOrDefault();
-        var    mapping = _userBookMappingStore.GetList(mapping => mapping.BookId == book.Id).FirstOrDefault();
+        var mapping = _userBookMappingStore.GetList(mapping => mapping.BookId == book.Id).FirstOrDefault();
         if (mapping == null) return null;
         mapping.MemoizedPageNumber = pageDto.LastReadPage;
         return _userBookMappingStore.UpdateAsync(mapping);
@@ -231,8 +246,8 @@ public class BookManager : BaseManager, IBookManager
 
     private BookDto MapToBookDto(Book book, IAuthorStore authorStore)
     {
-     
-        var bookDto =  new BookDto
+
+        var bookDto = new BookDto
         {
             Id = book.Id,
             GutenbergId = book.GutenbergId,
@@ -280,7 +295,7 @@ public class BookManager : BaseManager, IBookManager
         public List<string> Pages { get; set; }
     }
 
-  
+
     public static List<string> SplitTextIntoPages(string text, int wordLimit)
     {
         var pages = new List<string>();
