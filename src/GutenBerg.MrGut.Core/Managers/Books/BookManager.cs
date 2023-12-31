@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Abp.Application.Services.Dto;
 using Abp.Domain.Uow;
@@ -17,7 +16,6 @@ using GutenBerg.MrGut.Stores.Books;
 using GutenBerg.MrGut.Stores.Pages;
 using GutenBerg.MrGut.Stores.UserBookMappings;
 using Newtonsoft.Json;
-using HtmlAgilityPack;
 
 namespace GutenBerg.MrGut.Managers.Books;
 
@@ -79,14 +77,20 @@ public class BookManager : BaseManager, IBookManager
         var content = await response.Content.ReadAsStringAsync();
         var book = JsonConvert.DeserializeObject<BookResult>(content);
 
+        
+        
         var bookDto = new BookDto
         {
             Id = book.Id,
             Title = book.Title,
             Author = string.Join(", ", book.Authors.Select(a => a.Name)),
             Languages = string.Join(", ", book.Languages.Select(s => s)),
-            ImageUrl = book.Formats["image/jpeg"],
-            ContentUrl = book.Formats["text/plain; charset=us-ascii"]
+            ImageUrl = book.Formats.ContainsKey("image/jpeg") 
+                ? book.Formats["image/jpeg"] 
+                :"https://cdn.pixabay.com/photo/2018/01/17/18/43/book-3088775_1280.jpg",
+            ContentUrl = book.Formats.ContainsKey("text/plain; charset=us-ascii")  
+                ? book.Formats["text/plain; charset=us-ascii"]
+                : "No content !"
         };
       
 
@@ -171,12 +175,47 @@ public class BookManager : BaseManager, IBookManager
         };
     }
 
+    public Task<PagedResultDto<BookPageDto>> GetPaginatedBookPagesAsync(BookPagesRequestDto input)
+    {
+        // Validate input parameters
+        if (input.MaxResultCount <= 0 || input.SkipCount < 0)
+        {
+            throw new ArgumentException("Invalid pagination parameters");
+        }
+
+        // Filter the pages based on GutenbergId
+        var filteredPages = _pageStore.GetList(page => page.GutenbergId == input.GutenbergId);
+
+        // Apply pagination
+        var paginatedPages = filteredPages
+            .Skip(input.SkipCount)
+            .Take(input.MaxResultCount)
+            .ToList();
+
+        var totalCount = filteredPages.Count();
+
+        // Map the result to BookPageDto
+        var bookPageDtos = paginatedPages.Select(page => new BookPageDto
+        {
+            GutenbergId = page.GutenbergId,
+            BookId = page.BookId,
+            Content = page.Content,
+            PageNumber = page.PageNumber
+        }).ToList();
+        
+        // Return the paginated result
+        return Task.FromResult(new PagedResultDto<BookPageDto>(totalCount, bookPageDtos));
+    }
+
+
+
     private BookDto MapToBookDto(Book book, IAuthorStore authorStore)
     {
      
         var bookDto =  new BookDto
         {
             Id = book.Id,
+            GutenbergId = book.GutenbergId,
             Title = book.Title,
             Languages = book.Languages,
             ContentUrl = book.ContentUrl,
@@ -215,93 +254,13 @@ public class BookManager : BaseManager, IBookManager
     }
 
 
-    public List<string> SplitHtmlByH2Tags(string htmlContent)
-    {
-        var doc = new HtmlDocument();
-        doc.LoadHtml(htmlContent);
-
-        var pages = new List<string>();
-   
-        var currentPageContent = "";
-
-        foreach (var node in doc.DocumentNode.Descendants())
-        {
-            if (node.Name == "h2" && !string.IsNullOrWhiteSpace(currentPageContent))
-            {
-                // Start a new page
-                pages.Add(currentPageContent);
-                currentPageContent = "";
-            }
-            currentPageContent += node.OuterHtml;
-        }
-
-        // Add the last page if it has content
-        if (!string.IsNullOrWhiteSpace(currentPageContent))
-        {
-            pages.Add(currentPageContent);
-        }
-        var adjustedPages = pages.Select((page, index) => 
-        {
-            if (index == 0)
-            {
-                // Remove DOCTYPE and wrap in a div
-                return "<div>" + Regex.Replace(page, "<!DOCTYPE html[^>]*>", "", RegexOptions.IgnoreCase) + "</div>";
-            }
-            else
-            {
-                // Wrap in a div if not already wrapped
-                return page.StartsWith("<div>") ? page : "<div>" + page + "</div>";
-            }
-        }).ToList();
-        
-        return adjustedPages;
-    }
-
     private class PageContent
     {
         public string Header { get; set; }
         public List<string> Pages { get; set; }
     }
 
-    private List<string> SplitHtmlContent(string htmlContent)
-    {
-        var doc = new HtmlDocument();
-        doc.LoadHtml(htmlContent);
-
-        var pageContent = new PageContent
-        {
-            Pages = new List<string>()
-        };
-
-        var bodyBuilder = new StringBuilder();
-        var headerExtracted = false;
-
-        foreach (var node in doc.DocumentNode.Descendants())
-        {
-            if (!headerExtracted && node.Name != "h2")
-            {
-                pageContent.Header += node.OuterHtml;
-            }
-            else
-            {
-                if (node.Name == "h2" && bodyBuilder.Length > 0)
-                {
-                    // Add the current page to the list and start a new page
-                    pageContent.Pages.Add(bodyBuilder.ToString());
-                    bodyBuilder.Clear();
-                }
-                headerExtracted = true;
-                bodyBuilder.Append(node.OuterHtml);
-            }
-        }
-        
-        // Add the last page if it has content
-        if (bodyBuilder.Length <= 0) return pageContent.Pages;
-        pageContent.Pages.Add(pageContent.Header);
-        pageContent.Pages.Add(bodyBuilder.ToString());
-
-        return pageContent.Pages;
-    }
+  
     public static List<string> SplitTextIntoPages(string text, int wordLimit)
     {
         var pages = new List<string>();
@@ -386,24 +345,19 @@ public class BookManager : BaseManager, IBookManager
 
             paragraphCountOnCurrentPage++;
 
-            // Check if we've reached the paragraph limit for the current page
-            if (paragraphCountOnCurrentPage >= paragraphsPerPage)
-            {
-                // Complete the current page and add it to the list
-                htmlBuilder.Append("<p style=\"text-align: center;\">Page " + currentPage + " of " + ((paragraphs.Length + paragraphsPerPage - 1) / paragraphsPerPage) + "</p>");
-                htmlPages.Add(htmlBuilder.ToString());
-                htmlBuilder = new StringBuilder(); // Reset for the next page
-                paragraphCountOnCurrentPage = 0; // Reset paragraph count
-                currentPage++;  // Increment page number for the next page
-            }
+            if (paragraphCountOnCurrentPage < paragraphsPerPage) continue;
+            // Complete the current page and add it to the list
+            htmlBuilder.Append("<p style=\"text-align: center;\">Page " + currentPage + " of " + ((paragraphs.Length + paragraphsPerPage - 1) / paragraphsPerPage) + "</p>");
+            htmlPages.Add(htmlBuilder.ToString());
+            htmlBuilder = new StringBuilder(); // Reset for the next page
+            paragraphCountOnCurrentPage = 0; // Reset paragraph count
+            currentPage++;  // Increment page number for the next page
         }
 
         // Add any remaining content as the last page
-        if (htmlBuilder.Length > 0)
-        {
-            htmlBuilder.Append("<p style=\"text-align: center;\">Page " + currentPage + " of " + ((paragraphs.Length + paragraphsPerPage - 1) / paragraphsPerPage) + "</p>");
-            htmlPages.Add(htmlBuilder.ToString());
-        }
+        if (htmlBuilder.Length <= 0) return htmlPages;
+        htmlBuilder.Append("<p style=\"text-align: center;\">Page " + currentPage + " of " + ((paragraphs.Length + paragraphsPerPage - 1) / paragraphsPerPage) + "</p>");
+        htmlPages.Add(htmlBuilder.ToString());
 
         return htmlPages;
     }

@@ -30,4 +30,9 @@ public class BookAppService: MrGutAppServiceBase
     {
         return await _bookManager.GetBookByIdAsync(id);
     }
+
+    public async Task<PagedResultDto<BookPageDto>> GetPaginatedBookPagesAsync(BookPagesRequestDto input)
+    {
+        return await _bookManager.GetPaginatedBookPagesAsync(input);
+    }
 }
