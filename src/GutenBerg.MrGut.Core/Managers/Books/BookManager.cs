@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -207,7 +208,26 @@ public class BookManager : BaseManager, IBookManager
         return Task.FromResult(new PagedResultDto<BookPageDto>(totalCount, bookPageDtos));
     }
 
+    public Task<MemoizedPageDto> GetUserBookMapping(long? abpSessionUserId, int pageDtoGutenbergId)
+    {
+        var book = _bookStore.GetList(book => book.GutenbergId == pageDtoGutenbergId).FirstOrDefault();
+        var    mapping = _userBookMappingStore.GetList(mapping => mapping.BookId == book.Id).FirstOrDefault();
+        var memoizedPageDto = new MemoizedPageDto
+        {
+            GutenbergId = book.GutenbergId,
+            LastReadPage = mapping.MemoizedPageNumber
+        };
+        return Task.FromResult(memoizedPageDto);
+    }
 
+    public Task<UserBookMapping> PostUserBookMapping(long? abpSessionUserId, MemoizedPageDto pageDto)
+    {
+        var book = _bookStore.GetList(book => book.GutenbergId == pageDto.GutenbergId).FirstOrDefault();
+        var    mapping = _userBookMappingStore.GetList(mapping => mapping.BookId == book.Id).FirstOrDefault();
+        if (mapping == null) return null;
+        mapping.MemoizedPageNumber = pageDto.LastReadPage;
+        return _userBookMappingStore.UpdateAsync(mapping);
+    }
 
     private BookDto MapToBookDto(Book book, IAuthorStore authorStore)
     {

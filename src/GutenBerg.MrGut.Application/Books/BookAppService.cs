@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Abp.Application.Services.Dto;
+using GutenBerg.MrGut.Domain.Books;
 using GutenBerg.MrGut.Managers;
 using GutenBerg.MrGut.Managers.Books;
 using GutenBerg.MrGut.Managers.Books.dto;
@@ -34,5 +35,14 @@ public class BookAppService: MrGutAppServiceBase
     public async Task<PagedResultDto<BookPageDto>> GetPaginatedBookPagesAsync(BookPagesRequestDto input)
     {
         return await _bookManager.GetPaginatedBookPagesAsync(input);
+    }
+
+    public async Task<MemoizedPageDto> GetUserBookMapping(MemoizedPageDto pageDto)
+    {
+        return await _bookManager.GetUserBookMapping(AbpSession.UserId, pageDto.GutenbergId);
+    }
+    public async Task<UserBookMapping> PostUserBookMapping(MemoizedPageDto pageDto)
+    {
+        return await _bookManager.PostUserBookMapping(AbpSession.UserId, pageDto);
     }
 }
