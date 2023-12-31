@@ -55,7 +55,7 @@ public class BookManager : BaseManager, IBookManager
             .Where(book => book.Formats.TryGetValue("image/jpeg", out var _))
             .Select(book => new BookDto
             {
-                Id = book.Id,
+                GutenbergId = book.Id,
                 Title = book.Title,
                 Author = string.Join(", ", book.Authors.Select(a => a.Name)),
                 Languages = string.Join(", ", book.Languages.Select(s => s)),
@@ -82,7 +82,7 @@ public class BookManager : BaseManager, IBookManager
         
         var bookDto = new BookDto
         {
-            Id = book.Id,
+            GutenbergId = book.Id,
             Title = book.Title,
             Author = string.Join(", ", book.Authors.Select(a => a.Name)),
             Languages = string.Join(", ", book.Languages.Select(s => s)),
@@ -109,14 +109,14 @@ public class BookManager : BaseManager, IBookManager
 
         var bookToSave = new Book
         {
-            GutenbergId = bookDto.Id,
+            GutenbergId = bookDto.GutenbergId,
             Title = bookDto.Title,
             ContentUrl = bookDto.ContentUrl,
             ImageUrl = bookDto.ImageUrl,
             Languages = bookDto.Languages,
             AuthorId = authorSaveResult.Id
         };
-        var bookExists = _bookStore.BookExists(bookDto.Id);
+        var bookExists = _bookStore.BookExists(bookDto.GutenbergId);
         if (bookExists) return bookDto;
         var bookSaveResult = await _bookStore.CreateAsync(bookToSave);
         await _unitOfWorkManager.Current.SaveChangesAsync();
