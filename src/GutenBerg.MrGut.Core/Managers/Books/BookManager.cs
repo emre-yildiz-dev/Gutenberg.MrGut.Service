@@ -225,13 +225,20 @@ public class BookManager : BaseManager, IBookManager
 
     public Task<MemoizedPageDto> GetUserBookMapping(long? abpSessionUserId, int pageDtoGutenbergId)
     {
+        var memoizedPageDto = new MemoizedPageDto{
+            GutenbergId = pageDtoGutenbergId,
+            LastReadPage = 1
+        };
         var book = _bookStore.GetList(book => book.GutenbergId == pageDtoGutenbergId).FirstOrDefault();
+        if(book is not null){
+
         var mapping = _userBookMappingStore.GetList(mapping => mapping.BookId == book.Id).FirstOrDefault();
-        var memoizedPageDto = new MemoizedPageDto
+         memoizedPageDto = new MemoizedPageDto
         {
             GutenbergId = book.GutenbergId,
             LastReadPage = mapping.MemoizedPageNumber
         };
+        }
         return Task.FromResult(memoizedPageDto);
     }
 

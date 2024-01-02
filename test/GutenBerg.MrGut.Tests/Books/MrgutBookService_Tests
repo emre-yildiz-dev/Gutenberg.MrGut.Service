@@ -1,0 +1,36 @@
+namespace GutenBerg.MrGut.Tests.Books
+public class MrGutBookService_Tests : MrGutTestBase
+{
+    private readonly IBookManager _bookManager;
+    private readonly Mock<IBookStore> _mockBookStore;
+    private readonly Mock<IAuthorStore> _mockAuthorStore;
+
+    public MrGutBookService_Tests()
+    {
+        _mockBookStore = new Mock<IBookStore>();
+        _mockAuthorStore = new Mock<IAuthorStore>();
+        
+        _bookManager = new BookManager(
+            _mockBookStore.Object,
+            _mockAuthorStore.Object,
+        );
+    }
+
+    [Fact]
+    public async Task GetBookByIdAsync_ReturnsBookDto_WhenBookExists()
+    {
+        // Arrange
+        int testGutenbergId = 123;
+        var expectedBook = new Book { GutenbergId = testGutenbergId, /* ... other properties ... */ };
+        _mockBookStore.Setup(x => x.GetList(It.IsAny<Func<Book, bool>>()))
+                      .Returns(new List<Book> { expectedBook });
+        
+        // Act
+        var result = await _bookManager.GetBookByIdAsync(testGutenbergId);
+
+        // Assert
+        result.ShouldNotBeNull();
+        result.GutenbergId.ShouldBe(testGutenbergId);
+        // ... other assertions ...
+    }
+}
